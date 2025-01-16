@@ -19,6 +19,57 @@ BLACK = (0, 0, 0)
 BROWN = (139, 69, 19)
 GRAY = (128, 128, 128)
 
+# Level
+LEVELS = {
+    'easy': 7000,
+    'medium': 5000,
+    'difficult': 4000
+}
+font = pygame.font.Font("Chillerz.otf", 50)
+selected_level = None
+
+# In Level ra màn hình
+def draw_menu():
+    screen.fill(WHITE)
+    title_text = font.render("Welcome to my game", True, BLACK)
+    bar_text = font.render("Choose your level", True, BLACK)
+    easy_text = font.render("Easy", True, BLACK)
+    medium_text = font.render("Medium", True, BLACK)
+    difficult_text = font.render("Difficult", True, BLACK)
+    title_rect = title_text.get_rect(center = (WIDTH//2, HEIGHT//2 - 250))
+    bar_rect = bar_text.get_rect(center = (WIDTH//2, HEIGHT//2 - 200))
+    easy_rect = easy_text.get_rect(center = (WIDTH//2, HEIGHT//2 - 100))
+    medium_rect = medium_text.get_rect(center = (WIDTH//2, HEIGHT//2))
+    difficult_rect = difficult_text.get_rect(center = (WIDTH//2, HEIGHT//2 + 100))
+    screen.blit(title_text, title_rect)  # blit: Vẽ text vào vị trí rect
+    screen.blit(bar_text, bar_rect)
+    screen.blit(easy_text, easy_rect)
+    screen.blit(medium_text, medium_rect)
+    screen.blit(difficult_text, difficult_rect)
+    pygame.display.flip()
+    return easy_rect, medium_rect, difficult_rect
+
+# Xử lý sự kiện chọn level
+choosing_level = True
+while choosing_level:
+    easy_rect, medium_rect, difficult_rect = draw_menu()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = event.pos
+            if easy_rect.collidepoint(x, y):
+                selected_level = 'easy'
+            elif medium_rect.collidepoint(x, y):
+                selected_level = 'medium'
+            elif difficult_rect.collidepoint(x, y):
+                selected_level = 'difficult'
+            if selected_level:
+                choosing_level = False
+
+disappear_time = LEVELS[selected_level]
+
 # Định nghĩa lớp Zombie với từng bộ phận riêng biệt
 class Zombie(pygame.sprite.Sprite):
     def __init__(self, x, y, delay):
@@ -96,13 +147,11 @@ class Zombie(pygame.sprite.Sprite):
         if self.is_rising:
             if self.visible_parts < 4:
                 self.visible_parts += 1
-            elif current_time - self.start > 5000: #  Xuất hiện 5s rồi die
+            elif current_time - self.start > disappear_time: #  Xuất hiện 5s rồi die
                 self.dead = True
 
         return self.dead
-    
-font = pygame.font.Font("Chillerz.otf", 50)
-    
+       
 # Định nghĩa và thiết kế lớp Grave    
 class Grave(pygame.sprite.Sprite):
     def __init__(self, x, y):
