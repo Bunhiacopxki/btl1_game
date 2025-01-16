@@ -270,7 +270,8 @@ while running:
             
     # Xóa zombie
     for zombie in zombies_to_remove:
-        zombies.remove(zombie)
+        if zombie in zombies:
+            zombies.remove(zombie)
             
     # Cập nhật màn hình
     pygame.display.flip()
