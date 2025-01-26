@@ -6,7 +6,7 @@ import random
 pygame.init()
 
 # Thiết lập màn hình
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 1400, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Zombie")
 
@@ -25,7 +25,9 @@ LEVELS = {
     'medium': 5000,
     'difficult': 4000
 }
-font = pygame.font.Font("Chillerz.otf", 50)
+font = pygame.font.SysFont("comicsansms", 50)
+
+# font = pygame.font.Font("Chillerz.otf", 50)
 selected_level = None
 
 # In Level ra màn hình
@@ -169,6 +171,7 @@ class Grave(pygame.sprite.Sprite):
         rip_text = font.render("RIP", True, BLACK)
         screen.blit(rip_text, (self.x + 21, self.y + 88))
         
+
 class Hammer:
     def __init__(self):
         self.image = pygame.Surface((100, 100), pygame.SRCALPHA)
@@ -199,30 +202,103 @@ class Hammer:
         screen.blit(self.rotated_image, rotated_rect.topleft)
         self.head_rect = rotated_rect
         
-    def check_collision(self, zombie):
-        if zombie.is_rising:
-            return self.mouse_pressed and self.angle != 0 and self.head_rect.colliderect(zombie.head_rect)
+    def check_collision(self, obj):
+        if isinstance(obj, Zombie) and obj.is_rising:
+            return self.mouse_pressed and self.angle != 0 and self.head_rect.colliderect(obj.head_rect)
+        else:
+            return self.mouse_pressed and self.angle != 0 and self.head_rect.colliderect(obj.rect)
         return False
         
+
+############### Lớp bomb ################
+class Bomb(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.x = x
+        self.y = y
+        self.start = pygame.time.get_ticks()  # Thời điểm bất đầu
+        image_path = ['bomb.png', 'bomb2.png', 'zombom.jpg', 'zombom2.jpg']
+        img = random.randint(0, len(image_path) - 1)
+        # Tải ảnh bomb và lưu trữ trong thuộc tính image
+        self.image = pygame.image.load('./img/' + image_path[img]).convert_alpha()  # Hỗ trợ ảnh trong suốt
+
+        
+        original_width, original_height = self.image.get_size()
+        # Chiều cao mới
+        new_height = 100
+        # Tính toán chiều rộng mới dựa trên tỉ lệ ban đầu
+        new_width = int((new_height / original_height) * original_width)
+        # Scale ảnh với chiều rộng và chiều cao mới
+        self.image = pygame.transform.scale(self.image, (new_width, new_height))
+
+        # Lấy rect từ hình ảnh để định vị
+        self.rect = self.image.get_rect(topleft=(self.x, self.y))
+
+    def draw(self, screen):
+        # Vẽ hình ảnh lên màn hình
+        screen.blit(self.image, self.rect.topleft)
+
+    def update(self):
+        current_time = pygame.time.get_ticks()
+        return current_time - self.start > disappear_time #  Xuất hiện 5s rồi die
+
+
+
+############### Lớp tính điểm ###############
+class Point:
+    def __init__(self):
+        self.hit = 0
+        self.miss = 0
+        self.life = 3
+    
+    def getPoint(self):
+        return self.hit
+    
+    def getLife(self):
+        return self.life
+
+    def getHitRate(self):
+        if (self.hit + self.miss == 0 or self.hit < 0): return 0
+        return float(self.hit)/(self.hit + self.miss)
+
 # Ẩn con trỏ chuột mặc định
 pygame.mouse.set_visible(False)
 
 # Khởi tạo đối tượng búa
 hammer = Hammer()
                       
-# Tạo nhiều zombie ngẫu nhiên
-def create_zombies(zombies):
+# Tạo nhiều zombie và bomb ngẫu nhiên
+def create_object(objs):
     while True:
+        # Tạo ngẫu nhiên vị trí cho đối tượng
         x = random.randint(0, WIDTH - 100)
         y = random.randint(0, HEIGHT - 205)
-        if all(abs(x - zombie.x) > 100 for zombie in zombies):
-            return Zombie(x, y, 2900)
 
-num_of_zombies = 5
-zombies = []
+        # Tạo rect của đối tượng mới (giả sử kích thước tối đa là 100x200)
+        new_rect = pygame.Rect(x, y, 200, 210)
+
+        # Kiểm tra khoảng cách giữa rect mới và rect của các đối tượng hiện có
+        if all(not new_rect.colliderect(obj.rect) for obj in objs):
+            # Xác định loại đối tượng dựa trên tỉ lệ 3:7
+            if random.random() < 0.7:  # 70% khả năng xuất hiện Zombie
+                zombie = Zombie(x, y, 2900)
+                zombie.rect = new_rect  # Gán rect để sử dụng sau
+                return zombie
+            else:  # 30% khả năng xuất hiện Bomb
+                bomb = Bomb(x, y)
+                bomb.rect = new_rect  # Gán rect để sử dụng sau
+                return bomb
+
+
+
+game_time = 30000
+num_of_object = 5
+objs = []
 spawn_timer = pygame.time.get_ticks()
-
-# Vòng lặp chính
+# Thời gian bắt đầu trò chơi
+game_start_time = pygame.time.get_ticks()
+point = Point()
+########### Vòng lặp chính #############
 running = True
 while running:
     screen.fill(WHITE)
@@ -230,13 +306,55 @@ while running:
     # Lấy vị trí chuột
     mouse_pos = pygame.mouse.get_pos()
     
-    spawn_interval = random.randint(500, 2000)
+    # Tính toán thời gian còn lại
     current_time = pygame.time.get_ticks()
-    if len(zombies) < num_of_zombies and current_time - spawn_timer > spawn_interval:
+    elapsed_time = current_time - game_start_time
+    remaining_time = max(0, (game_time - elapsed_time) // 1000)  # Đếm ngược theo giây
+    
+    # Nếu hết giờ, kết thúc trò chơi
+    if remaining_time <= 0:
+        running = False
+        print("Game Over!")
+        print(f"Your Score: {point.getPoint()}")
+        print(f"Hit Rate: {point.getHitRate():.2%}")
+        pygame.quit()
+        sys.exit()
+
+    spawn_interval = random.randint(500, 2000)
+    
+    if len(objs) < num_of_object and current_time - spawn_timer > spawn_interval:
         # Tạo zombie
-        zombies.append(create_zombies(zombies))
+        objs.append(create_object(objs))
         spawn_timer = current_time
     
+
+    # Cập nhật và vẽ zombie
+    objects_to_remove = []
+    collided = False
+    for obj in objs:
+        if isinstance(obj, Zombie):
+            if obj.grave_shown:
+                grave = Grave(obj.x, obj.y)
+                grave.draw(screen)
+            if obj.update():
+                objects_to_remove.append(obj)
+            elif obj.is_rising:
+                obj.grave_shown = False
+                obj.draw(screen)
+            if hammer.check_collision(obj):
+                objects_to_remove.append(obj)
+                point.hit += 1
+                collided = True
+        else:
+            if obj.update():
+                objects_to_remove.append(obj)
+            else:
+                obj.draw(screen)
+            if hammer.check_collision(obj):
+                point.hit -= 1
+                collided = True
+                objects_to_remove.append(obj)
+
     # Xử lý sự kiện
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -246,33 +364,33 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             hammer.update_rotation(125)
             hammer.mouse_pressed = True
+            if not collided:
+                point.miss += 1
         # Thả chuột -> Búa trở về trạng thái thẳng đứng
         elif event.type == pygame.MOUSEBUTTONUP:
             hammer.update_rotation(0)
             hammer.mouse_pressed = False
-            
+    
     # Vẽ búa theo con trỏ chuột
     hammer.draw_cursor(screen, mouse_pos)
+            
+    
 
-    # Cập nhật và vẽ zombie
-    zombies_to_remove = []
-    for zombie in zombies:
-        if zombie.grave_shown:
-            grave = Grave(zombie.x, zombie.y)
-            grave.draw(screen)
-        if zombie.update():
-            zombies_to_remove.append(zombie)
-        elif zombie.is_rising:
-            zombie.grave_shown = False
-            zombie.draw(screen)
-        if hammer.check_collision(zombie):
-            zombies_to_remove.append(zombie)
-            
     # Xóa zombie
-    for zombie in zombies_to_remove:
-        if zombie in zombies:
-            zombies.remove(zombie)
+    for obj in objects_to_remove:
+        if obj in objs:
+            objs.remove(obj)
             
+
+    # Hiển thị thời gian và điểm số
+    time_text = font.render(f"Time: {remaining_time}s", True, BLACK)
+    score_text = font.render(f"Score: {point.getPoint()}", True, BLACK)
+    miss_text = font.render(f"Score: {point.miss}", True, BLACK)
+    hit_rate_text = font.render(f"Hit Rate: {point.getHitRate():.2%}", True, BLACK)
+    screen.blit(time_text, (10, 10))
+    screen.blit(score_text, (10, 60))
+    screen.blit(miss_text, (10, 110))
+    screen.blit(hit_rate_text, (10, 160))
     # Cập nhật màn hình
     pygame.display.flip()
     pygame.time.Clock().tick(60)
