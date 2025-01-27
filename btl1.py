@@ -4,6 +4,7 @@ import random
 
 # Khởi tạo Pygame
 pygame.init()
+pygame.mixer.init()
 
 # Thiết lập màn hình
 WIDTH, HEIGHT = 1400, 800
@@ -18,57 +19,160 @@ WHITE_BLUE = (0, 150, 255)
 BLACK = (0, 0, 0)
 BROWN = (139, 69, 19)
 GRAY = (128, 128, 128)
+HOVER_COLOR = (250, 180, 90)
 
 # Level
 LEVELS = {
-    'easy': 7000,
-    'medium': 5000,
-    'difficult': 4000
+    'Easy': 7000,
+    'Medium': 5000,
+    'Difficult': 4000
 }
 font = pygame.font.SysFont("comicsansms", 50)
 
 # font = pygame.font.Font("Chillerz.otf", 50)
 selected_level = None
 
+################### Hình nền ##############
+# Load hình nền
+background_easy = pygame.image.load("./img/background_easy.jpg").convert()
+background_medium = pygame.image.load("./img/background_medium.jpg").convert()
+background_difficult = pygame.image.load("./img/background_difficult.jpg").convert()
+default_background = pygame.image.load("./img/default_background.jpg").convert()
+
+# Resize background phù hợp kích thước màn hình
+background_easy = pygame.transform.scale(background_easy, (WIDTH, HEIGHT))
+background_medium = pygame.transform.scale(background_medium, (WIDTH, HEIGHT))
+background_difficult = pygame.transform.scale(background_difficult, (WIDTH, HEIGHT))
+default_background = pygame.transform.scale(default_background, (WIDTH, HEIGHT))
+
+################# Nhạc nền ################
+# Nạp nhạc nền
+pygame.mixer.music.load('./sound/background_music.mp3')  # Đường dẫn tới nhạc nền
+pygame.mixer.music.set_volume(0.05)  # Nhạc nền ở mức 80%
+pygame.mixer.music.play(-1, 0.0)  # Phát nhạc nền, vòng lặp vô hạn
+
+# Nạp âm thanh khi đập trúng zombie
+hit_zombie = pygame.mixer.Sound('./sound/hit_zombie.wav')  # Đường dẫn tới âm thanh khi đập trúng zombie
+hit_zombie.set_volume(0.9)
+hit_zombom = pygame.mixer.Sound('./sound/hit_zombom.wav')  # Đường dẫn tới âm thanh khi đập trúng zombie
+hit_zombom.set_volume(0.9)
+# Tạo các nút chế độ chơi
+class Button:
+    def __init__(self, x, y, width, height, text, base_color, hover_color):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.text = text
+        self.base_color = base_color
+        self.hover_color = hover_color
+        self.current_color = base_color  # Màu hiện tại
+        self.is_hovered = False  # Trạng thái hover
+
+    def draw(self, screen):
+        # Vẽ nút
+        pygame.draw.rect(screen, self.current_color, self.rect, border_radius=15)
+        # Đổ bóng (shadow)
+        shadow_rect = self.rect.copy()
+        shadow_rect.x += 3
+        shadow_rect.y += 3
+        pygame.draw.rect(screen, BLACK, shadow_rect, border_radius=15)
+
+        # Vẽ text
+        text_surface = font.render(self.text, True, WHITE)
+        text_rect = text_surface.get_rect(center=self.rect.center)
+        screen.blit(text_surface, text_rect)
+
+    def handle_hover(self, mouse_pos):
+        # Cập nhật trạng thái hover
+        self.is_hovered = self.rect.collidepoint(mouse_pos)
+        self.current_color = self.hover_color if self.is_hovered else self.base_color
+
+# Tạo danh sách nút
+buttons = [
+    Button(600, 300, 200, 50, "Easy", GREEN, HOVER_COLOR),
+    Button(600, 400, 200, 50, "Medium", GRAY, HOVER_COLOR),
+    Button(600, 500, 200, 50, "Difficult", BLACK, HOVER_COLOR),
+]
+
+
 # In Level ra màn hình
-def draw_menu():
-    screen.fill(WHITE)
-    title_text = font.render("Welcome to my game", True, BLACK)
-    bar_text = font.render("Choose your level", True, BLACK)
-    easy_text = font.render("Easy", True, BLACK)
-    medium_text = font.render("Medium", True, BLACK)
-    difficult_text = font.render("Difficult", True, BLACK)
-    title_rect = title_text.get_rect(center = (WIDTH//2, HEIGHT//2 - 250))
-    bar_rect = bar_text.get_rect(center = (WIDTH//2, HEIGHT//2 - 200))
-    easy_rect = easy_text.get_rect(center = (WIDTH//2, HEIGHT//2 - 100))
-    medium_rect = medium_text.get_rect(center = (WIDTH//2, HEIGHT//2))
-    difficult_rect = difficult_text.get_rect(center = (WIDTH//2, HEIGHT//2 + 100))
-    screen.blit(title_text, title_rect)  # blit: Vẽ text vào vị trí rect
-    screen.blit(bar_text, bar_rect)
-    screen.blit(easy_text, easy_rect)
-    screen.blit(medium_text, medium_rect)
-    screen.blit(difficult_text, difficult_rect)
-    pygame.display.flip()
-    return easy_rect, medium_rect, difficult_rect
+# def draw_menu():
+#     screen.fill(WHITE)
+#     title_text = font.render("Welcome to my game", True, BLACK)
+#     bar_text = font.render("Choose your level", True, BLACK)
+#     easy_text = font.render("Easy", True, BLACK)
+#     medium_text = font.render("Medium", True, BLACK)
+#     difficult_text = font.render("Difficult", True, BLACK)
+#     title_rect = title_text.get_rect(center = (WIDTH//2, HEIGHT//2 - 250))
+#     bar_rect = bar_text.get_rect(center = (WIDTH//2, HEIGHT//2 - 200))
+#     easy_rect = easy_text.get_rect(center = (WIDTH//2, HEIGHT//2 - 100))
+#     medium_rect = medium_text.get_rect(center = (WIDTH//2, HEIGHT//2))
+#     difficult_rect = difficult_text.get_rect(center = (WIDTH//2, HEIGHT//2 + 100))
+#     screen.blit(title_text, title_rect)  # blit: Vẽ text vào vị trí rect
+#     screen.blit(bar_text, bar_rect)
+#     screen.blit(easy_text, easy_rect)
+#     screen.blit(medium_text, medium_rect)
+#     screen.blit(difficult_text, difficult_rect)
+#     pygame.display.flip()
+#     return easy_rect, medium_rect, difficult_rect
 
 # Xử lý sự kiện chọn level
+current_background = default_background  # Hình nền mặc định
 choosing_level = True
 while choosing_level:
-    easy_rect, medium_rect, difficult_rect = draw_menu()
+    #screen.blit(background_image, (0, 0))  # Vẽ hình nền
+
+    mouse_pos = pygame.mouse.get_pos()
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            x, y = event.pos
-            if easy_rect.collidepoint(x, y):
-                selected_level = 'easy'
-            elif medium_rect.collidepoint(x, y):
-                selected_level = 'medium'
-            elif difficult_rect.collidepoint(x, y):
-                selected_level = 'difficult'
-            if selected_level:
-                choosing_level = False
+            for button in buttons:
+                if button.is_hovered:
+                    selected_level = button.text
+                    choosing_level = False
+                    print(f"Chế độ chơi: {button.text}")
+                    
+    # kiểm tra trạng thái hover của các nút
+    for button in buttons:
+        button.handle_hover(mouse_pos)
+
+    # Thay đổi background dựa trên trạng thái hover
+    if buttons[0].is_hovered:
+        current_background = background_easy
+    elif buttons[1].is_hovered:
+        current_background = background_medium
+    elif buttons[2].is_hovered:
+        current_background = background_difficult
+    else:
+        current_background = default_background
+
+    # Vẽ màn hình
+    screen.blit(current_background, (0, 0))  # Vẽ background
+    # Vẽ các nút
+    for button in buttons:
+        button.draw(screen)
+
+    pygame.display.update()  # Cập nhật màn hình
+    pygame.time.Clock().tick(60)
+
+# choosing_level = True
+# while choosing_level:
+#     easy_rect, medium_rect, difficult_rect = draw_menu()
+#     for event in pygame.event.get():
+#         if event.type == pygame.QUIT:
+#             pygame.quit()
+#             sys.exit()
+#         elif event.type == pygame.MOUSEBUTTONDOWN:
+#             x, y = event.pos
+#             if easy_rect.collidepoint(x, y):
+#                 selected_level = 'easy'
+#             elif medium_rect.collidepoint(x, y):
+#                 selected_level = 'medium'
+#             elif difficult_rect.collidepoint(x, y):
+#                 selected_level = 'difficult'
+#             if selected_level:
+#                 choosing_level = False
 
 disappear_time = LEVELS[selected_level]
 
@@ -205,7 +309,9 @@ class Hammer:
     def check_collision(self, obj):
         if isinstance(obj, Zombie) and obj.is_rising:
             return self.mouse_pressed and self.angle != 0 and self.head_rect.colliderect(obj.head_rect)
-        elif isinstance(obj, Bomb):
+        elif isinstance(obj, Zombie) and obj.is_rising == False:
+            return False
+        elif if isinstance(obj, Bomb)::
             return self.mouse_pressed and self.angle != 0 and self.head_rect.colliderect(obj.rect)
         return False
         
@@ -344,6 +450,8 @@ while running:
             if hammer.check_collision(obj):
                 objects_to_remove.append(obj)
                 point.hit += 1
+                
+                hit_zombie.play()  # Phát âm thanh khi trúng zombie
         else:
             if obj.update():
                 objects_to_remove.append(obj)
@@ -352,6 +460,7 @@ while running:
             if hammer.check_collision(obj):
                 point.hit -= 1
                 objects_to_remove.append(obj)
+                hit_zombom.play()
 
     # Xử lý sự kiện
     for event in pygame.event.get():
