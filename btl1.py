@@ -311,7 +311,7 @@ class Hammer:
             return self.mouse_pressed and self.angle != 0 and self.head_rect.colliderect(obj.head_rect)
         elif isinstance(obj, Zombie) and obj.is_rising == False:
             return False
-        elif if isinstance(obj, Bomb)::
+        elif isinstance(obj, Bomb):
             return self.mouse_pressed and self.angle != 0 and self.head_rect.colliderect(obj.rect)
         return False
         
