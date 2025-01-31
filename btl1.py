@@ -186,57 +186,29 @@ class Zombie(pygame.sprite.Sprite):
         self.start = pygame.time.get_ticks()  # Thời điểm bất đầu
         self.is_rising = False  # Trạng thái trồi lên
         self.dead = False
-        self.visible_parts = 0
         self.grave_shown = False
-        self.head_rect = pygame.Rect(self.x + 20, self.y, 60, 60)
-        
+        self.image_path = ['zom1.jpg', 'zom2.jpg', 'zom3.jpg']
+        self.zombie_type = random.randint(0, len(self.image_path) - 1)
+
     def draw(self, screen):
-        self.parts = [] # Danh sách chứa các phần của zombie để kiểm tra va chạm
-        
-        if self.visible_parts >= 1:
-            # Đầu
-            self.parts.append(self.head_rect)
-            pygame.draw.rect(screen, GREEN, self.head_rect)  # Đầu zombie
-            left_eye = pygame.Rect(self.x + 30, self.y + 25, 15, 8)
-            pygame.draw.rect(screen, BLACK, left_eye)  # Mắt trái
-            right_eye = pygame.Rect(self.x + 55, self.y + 25, 15, 8)
-            pygame.draw.rect(screen, BLACK, right_eye)  # Mắt phải
-            pygame.draw.line(screen, BLACK, (self.x + 30, self.y + 45), (self.x + 70, self.y + 45), 8)  # Miệng
-        
-            # Tóc
-            pygame.draw.rect(screen, (0, 50, 0), (self.x + 20, self.y, 60, 10))
-            pygame.draw.rect(screen, (0, 50, 0), (self.x + 20, self.y + 10, 20, 10))
-            pygame.draw.rect(screen, (0, 50, 0), (self.x + 70, self.y + 10, 10, 10))
-        
-        if self.visible_parts >= 2:  
-            # Thân
-            body = pygame.Rect(self.x + 25, self.y + 60, 50, 80)
-            self.parts.append(body)
-            pygame.draw.rect(screen, WHITE_BLUE, body)  # Thân
-
-        if self.visible_parts >= 3:
-            # Tay
-            left_leg = pygame.Rect(self.x + 5, self.y + 60, 20, 60)
-            self.parts.append(left_leg)
-            pygame.draw.rect(screen, GREEN, left_leg)  # Tay trái
-            pygame.draw.rect(screen, WHITE_BLUE, (self.x + 5, self.y + 60, 20, 15))  # Tay áo trái
-            right_leg = pygame.Rect(self.x + 75, self.y + 60, 20, 60)
-            self.parts.append(right_leg)
-            pygame.draw.rect(screen, GREEN, right_leg)  # Tay phải
-            pygame.draw.rect(screen, WHITE_BLUE, (self.x + 75, self.y + 60, 20, 15))  # Tay áo phải
-        
-        if self.visible_parts >= 4:
-            # Chân
-            left_leg = pygame.Rect(self.x + 25, self.y + 140, 20, 50)
-            self.parts.append(left_leg)
-            pygame.draw.rect(screen, BLUE, left_leg)  # Chân trái
-            pygame.draw.rect(screen, GREEN, (self.x + 25, self.y + 190, 20, 15))  # Chân trái
-            right_leg = pygame.Rect(self.x + 55, self.y + 140, 20, 50)
-            self.parts.append(right_leg)
-            pygame.draw.rect(screen, BLUE, right_leg)  # Chân phải
-            pygame.draw.rect(screen, GREEN, (self.x + 55, self.y + 190, 20, 15))  # Chân phải
-
-        return self.parts
+        # Tải ảnh bomb và lưu trữ trong thuộc tính image
+        self.image = pygame.image.load('./img/zombie/' + self.image_path[self.zombie_type]).convert_alpha()  # Hỗ trợ ảnh trong suốt
+        original_width, original_height = self.image.get_size()
+        # Chiều cao mới
+        if self.zombie_type == 2:
+            self.height = 210
+        elif self.zombie_type == 1:
+            self.height = 175
+        else:
+            self.height = 161
+        # Tính toán chiều rộng mới dựa trên tỉ lệ ban đầu
+        self.width = int((self.height / original_height) * original_width)
+        # Scale ảnh với chiều rộng và chiều cao mới
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        # Lấy rect từ hình ảnh để định vị
+        self.rect = self.image.get_rect(topleft = (self.x, self.y))
+        # Vẽ hình ảnh lên màn hình
+        screen.blit(self.image, self.rect.topleft)
 
     def update(self):
         current_time = pygame.time.get_ticks()
@@ -249,12 +221,9 @@ class Zombie(pygame.sprite.Sprite):
         if not self.is_rising and current_time - self.start > self.delay:
             self.is_rising = True
 
-        # Tăng dần khi trồi lên và hiện dần từng bộ phận
-        if self.is_rising:
-            if self.visible_parts < 4:
-                self.visible_parts += 1
-            elif current_time - self.start > disappear_time: #  Xuất hiện 5s rồi die
-                self.dead = True
+        #  Xuất hiện 5s rồi die
+        if self.is_rising and current_time - self.start > disappear_time:
+            self.dead = True
 
         return self.dead
        
@@ -264,58 +233,55 @@ class Grave(pygame.sprite.Sprite):
         super().__init__()
         self.x = x
         self.y = y
-        self.rect = pygame.Rect(self.x, self.y + 69, 100, 136)
+        self.image = pygame.image.load('./img/grave/grave.webp').convert_alpha()
+        original_width, original_height = self.image.get_size()
+        # Chiều cao mới
+        new_height = 150
+        # Tính toán chiều rộng mới dựa trên tỉ lệ ban đầu
+        new_width = int((new_height / original_height) * original_width)
+        # Scale ảnh với chiều rộng và chiều cao mới
+        self.image = pygame.transform.scale(self.image, (new_width, new_height))
+        self.rect = self.image.get_rect(topleft=(self.x, self.y))
 
     def draw(self, screen):
-        # Phần thân ngôi mộ
-        pygame.draw.rect(screen, GRAY, self.rect)
-        # Phần đầu ngôi mộ
-        pygame.draw.circle(screen, GRAY, (self.x + 50, self.y + 69), 50)
-        # Chữ trên mộ
-        rip_text = font.render("RIP", True, BLACK)
-        screen.blit(rip_text, (self.x + 21, self.y + 88))
-        
+        screen.blit(self.image, self.rect.topleft)
 
 class Hammer:
     def __init__(self):
-        self.image = pygame.Surface((100, 100), pygame.SRCALPHA)
+        self.image = pygame.image.load('./img/hammer/hammer.webp').convert_alpha()
+        original_width, original_height = self.image.get_size()
+        # Chiều cao mới
+        new_height = 100
+        # Tính toán chiều rộng mới dựa trên tỉ lệ ban đầu
+        new_width = int((new_height / original_height) * original_width)
+        # Scale ảnh với chiều rộng và chiều cao mới
+        self.image = pygame.transform.scale(self.image, (new_width, new_height))
         self.rotated_image = self.image  # Ảnh mặc định
         self.angle = 0  # Góc quay mặc định
-        self.mouse_pressed = False
-        
-        # Vẽ búa
-        self.draw_hammer_shape()
-
-    # Vẽ hình cái búa lên Surface
-    def draw_hammer_shape(self):
-        # Xóa nền
-        self.image.fill((0, 0, 0, 0))
-        # Đầu búa (màu xám)
-        pygame.draw.rect(self.image, GRAY, (40, 10, 60, 20))
-        # Cán búa (màu nâu)
-        pygame.draw.rect(self.image, BROWN, (65, 30, 15, 80))
+        self.mouse_pressed = False      
 
     def update_rotation(self, angle):
         # Cập nhật góc quay của búa
         self.angle = angle
         self.rotated_image = pygame.transform.rotate(self.image, self.angle)
 
+    # Vẽ búa tại vị trí con trỏ chuột
     def draw_cursor(self, screen, pos):
-        # Vẽ búa tại vị trí con trỏ chuột
         rotated_rect = self.rotated_image.get_rect(center = pos)
         screen.blit(self.rotated_image, rotated_rect.topleft)
         self.head_rect = rotated_rect
         
     def check_collision(self, obj):
         if isinstance(obj, Zombie) and obj.is_rising:
-            return self.mouse_pressed and self.angle != 0 and self.head_rect.colliderect(obj.head_rect)
+            if self.mouse_pressed and self.angle != 0:
+                head_size = [0.1, 0.2, 0.3]
+                zombie_head = pygame.Rect(obj.x, obj.y, obj.width, obj.height * head_size[obj.zombie_type])
+                return self.head_rect.colliderect(zombie_head)
         elif isinstance(obj, Zombie) and obj.is_rising == False:
             return False
         elif isinstance(obj, Bomb):
             return self.mouse_pressed and self.angle != 0 and self.head_rect.colliderect(obj.rect)
-        return False
         
-
 ############### Lớp bomb ################
 class Bomb(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -395,8 +361,6 @@ def create_object(objs):
                 bomb.rect = new_rect  # Gán rect để sử dụng sau
                 return bomb
 
-
-
 game_time = 30000
 num_of_object = 5
 objs = []
@@ -433,7 +397,6 @@ while running:
         objs.append(create_object(objs))
         spawn_timer = current_time
     
-
     # Cập nhật và vẽ zombie
     objects_to_remove = []
 
@@ -448,7 +411,11 @@ while running:
                 obj.grave_shown = False
                 obj.draw(screen)
             if hammer.check_collision(obj):
-                objects_to_remove.append(obj)
+                obj.zombie_type -= 1
+                if obj.zombie_type == -1:
+                    objects_to_remove.append(obj)
+                else:
+                    obj.draw(screen)
                 point.hit += 1
                 
                 hit_zombie.play()  # Phát âm thanh khi trúng zombie
@@ -468,7 +435,7 @@ while running:
             pygame.quit()
             sys.exit()
         # Khi bấm chuột, cây búa nghiêng 125 độ
-        elif event.type == pygame.MOUSEBUTTONDOWN:
+        elif event.type == pygame.MOUSEBUTTONDOWN and hammer.mouse_pressed is False:
             hammer.update_rotation(125)
             hammer.mouse_pressed = True
             # Chỉ tăng điểm miss nếu không có va chạm
@@ -478,7 +445,7 @@ while running:
                 point.miss += 1
 
         # Thả chuột -> Búa trở về trạng thái thẳng đứng
-        elif event.type == pygame.MOUSEBUTTONUP:
+        elif event.type == pygame.MOUSEBUTTONUP and hammer.mouse_pressed is True:
             hammer.update_rotation(0)
             hammer.mouse_pressed = False
     
