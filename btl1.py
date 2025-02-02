@@ -276,6 +276,7 @@ class Hammer:
             if self.mouse_pressed and self.angle != 0:
                 head_size = [0.1, 0.2, 0.3]
                 zombie_head = pygame.Rect(obj.x, obj.y, obj.width, obj.height * head_size[obj.zombie_type])
+                self.mouse_pressed = False
                 return self.head_rect.colliderect(zombie_head)
         elif isinstance(obj, Zombie) and obj.is_rising == False:
             return False
@@ -436,13 +437,13 @@ while running:
             pygame.quit()
             sys.exit()
         # Khi bấm chuột, cây búa nghiêng 125 độ
-        elif event.type == pygame.MOUSEBUTTONDOWN and hammer.mouse_pressed is False:
+        elif event.type == pygame.MOUSEBUTTONDOWN:
             hammer.update_rotation(125)
             hammer.mouse_pressed = True
             if not collided:
                 point.miss += 1
         # Thả chuột -> Búa trở về trạng thái thẳng đứng
-        elif event.type == pygame.MOUSEBUTTONUP and hammer.mouse_pressed is True:
+        elif event.type == pygame.MOUSEBUTTONUP:
             hammer.update_rotation(0)
             hammer.mouse_pressed = False
     
