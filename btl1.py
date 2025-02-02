@@ -280,7 +280,7 @@ class Hammer:
                 return self.head_rect.colliderect(zombie_head)
         elif isinstance(obj, Zombie) and obj.is_rising == False:
             return False
-        else:
+        elif isinstance(obj, Bomb):
             return self.mouse_pressed and self.angle != 0 and self.head_rect.colliderect(obj.rect)
         
 ############### Lớp bomb ################
@@ -400,7 +400,7 @@ while running:
     
     # Cập nhật và vẽ zombie
     objects_to_remove = []
-    collided = False
+
     for obj in objs:
         if isinstance(obj, Zombie):
             if obj.grave_shown:
@@ -418,7 +418,7 @@ while running:
                 else:
                     obj.draw(screen)
                 point.hit += 1
-                collided = True
+                
                 hit_zombie.play()  # Phát âm thanh khi trúng zombie
         else:
             if obj.update():
@@ -427,7 +427,6 @@ while running:
                 obj.draw(screen)
             if hammer.check_collision(obj):
                 point.hit -= 1
-                collided = True
                 objects_to_remove.append(obj)
                 hit_zombom.play()
 
@@ -440,8 +439,12 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             hammer.update_rotation(125)
             hammer.mouse_pressed = True
-            if not collided:
+            # Chỉ tăng điểm miss nếu không có va chạm
+            collided = any(hammer.check_collision(obj) for obj in objs)
+            collided_bomb = any(isinstance(obj, Bomb) and hammer.check_collision(obj) for obj in objs)
+            if not collided or collided_bomb:
                 point.miss += 1
+
         # Thả chuột -> Búa trở về trạng thái thẳng đứng
         elif event.type == pygame.MOUSEBUTTONUP:
             hammer.update_rotation(0)
@@ -460,8 +463,8 @@ while running:
 
     # Hiển thị thời gian và điểm số
     time_text = font.render(f"Time: {remaining_time}s", True, BLACK)
-    score_text = font.render(f"Score: {point.getPoint()}", True, BLACK)
-    miss_text = font.render(f"Score: {point.miss}", True, BLACK)
+    score_text = font.render(f"Hit: {point.getPoint()}", True, BLACK)
+    miss_text = font.render(f"Miss: {point.miss}", True, BLACK)
     hit_rate_text = font.render(f"Hit Rate: {point.getHitRate():.2%}", True, BLACK)
     screen.blit(time_text, (10, 10))
     screen.blit(score_text, (10, 60))
