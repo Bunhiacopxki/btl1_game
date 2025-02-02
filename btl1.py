@@ -276,7 +276,6 @@ class Hammer:
             if self.mouse_pressed and self.angle != 0:
                 head_size = [0.1, 0.2, 0.3]
                 zombie_head = pygame.Rect(obj.x, obj.y, obj.width, obj.height * head_size[obj.zombie_type])
-                self.mouse_pressed = False
                 return self.head_rect.colliderect(zombie_head)
         elif isinstance(obj, Zombie) and obj.is_rising == False:
             return False
@@ -412,6 +411,7 @@ while running:
                 obj.grave_shown = False
                 obj.draw(screen)
             if hammer.check_collision(obj):
+                hammer.mouse_pressed = False
                 obj.zombie_type -= 1
                 if obj.zombie_type == -1:
                     objects_to_remove.append(obj)
