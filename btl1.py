@@ -10,6 +10,7 @@ pygame.mixer.init()
 WIDTH, HEIGHT = 1400, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Zombie")
+clock = pygame.time.Clock()
 
 # Màu sắc
 WHITE = (255, 255, 255)
@@ -28,6 +29,12 @@ LEVELS = {
     'Difficult': 4000
 }
 font = pygame.font.SysFont("comicsansms", 50)
+# Load hình ảnh
+grave_image = pygame.image.load('./img/grave/grave.webp').convert_alpha()
+hammer_image = pygame.image.load('./img/hammer/hammer.webp').convert_alpha()
+zombie_images = [
+    pygame.image.load(f'./img/zombie/zom{i}.jpg').convert_alpha() for i in range(1, 4)
+]
 
 # font = pygame.font.Font("Chillerz.otf", 50)
 selected_level = None
@@ -192,7 +199,7 @@ class Zombie(pygame.sprite.Sprite):
 
     def draw(self, screen):
         # Tải ảnh bomb và lưu trữ trong thuộc tính image
-        self.image = pygame.image.load('./img/zombie/' + self.image_path[self.zombie_type]).convert_alpha()  # Hỗ trợ ảnh trong suốt
+        self.image = zombie_images[self.zombie_type]
         original_width, original_height = self.image.get_size()
         # Chiều cao mới
         if self.zombie_type == 2:
@@ -233,7 +240,7 @@ class Grave(pygame.sprite.Sprite):
         super().__init__()
         self.x = x
         self.y = y
-        self.image = pygame.image.load('./img/grave/grave.webp').convert_alpha()
+        self.image = grave_image
         original_width, original_height = self.image.get_size()
         # Chiều cao mới
         new_height = 150
@@ -248,7 +255,7 @@ class Grave(pygame.sprite.Sprite):
 
 class Hammer:
     def __init__(self):
-        self.image = pygame.image.load('./img/hammer/hammer.webp').convert_alpha()
+        self.image = hammer_image
         original_width, original_height = self.image.get_size()
         # Chiều cao mới
         new_height = 100
@@ -472,4 +479,4 @@ while running:
     screen.blit(hit_rate_text, (10, 160))
     # Cập nhật màn hình
     pygame.display.flip()
-    pygame.time.Clock().tick(60)
+    clock.tick(60)
