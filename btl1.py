@@ -550,10 +550,73 @@ def result():
         pygame.display.flip()
         pygame.time.Clock().tick(60)
 
+# Vẽ button chọn
+def draw_button(text, x, y, width, height, button_color, text_color):
+    pygame.draw.rect(screen, button_color, (x, y, width, height), border_radius=10)  # Border_radius làm góc bo tròn
+    text_surface = font.render(text, True, text_color)
+    text_rect = text_surface.get_rect(center=(x + width // 2, y + height // 2))
+    screen.blit(text_surface, text_rect)
+
+# Vẽ text ra màn hình
+def draw_text(text, font, color, surface, x, y):
+    text_obj = font.render(text, True, color)
+    text_rect = text_obj.get_rect(center = (x, y))
+    surface.blit(text_obj, text_rect)
+
+# Màn hình hướng dẫn cách chơi
+def instruction():
+    running = True
+    while running:
+        screen.fill(WHITE)
+        draw_text("How to Play:", font, BLACK, screen, WIDTH // 2, HEIGHT // 5)
+        draw_text("1. Choose your level: Easy, Medium or Difficult", font, BLACK, screen, WIDTH // 2, HEIGHT // 2 - 1.5 * 80)
+        draw_text("Please remember the higher the level, the faster the speed.", font, BLACK, screen, WIDTH // 2, HEIGHT // 2 - 0.5 * 80)
+        draw_text("2. Click mouse on zombie's head to kill zombie.", font, BLACK, screen, WIDTH // 2, HEIGHT // 2 + 0.5 * 80)
+        draw_text("You have three lives, please be careful with bombs.", font, BLACK, screen, WIDTH // 2, HEIGHT // 2 + 1.5 * 80)
+        draw_text("Press ESC to go back.", font, RED, screen, WIDTH // 2, HEIGHT - 50)
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:  # Nhấn ESC để quay lại menu
+                    running = False
 
 def game():
-    menu()
-    play()
-    result()
+    while True:
+        screen.fill(WHITE)
+        # Hiển thị nút "Welcome to My Game"
+        button_width = 600  # Chiều rộng nút lớn hơn vì đây là nút tiêu đề
+        button_height = 80  # Chiều cao nút lớn hơn
+        title_y = HEIGHT // 2 - 250  # Căn nút tiêu đề phía trên hai nút còn lại
+        draw_button("Welcome to My Game", WIDTH // 2 - button_width // 2, title_y, button_width, button_height, GRAY, WHITE)
+        
+        # Hiển thị nút Play Now và Instruction
+        button_width = 300  # Chiều rộng nút tăng để hiển thị chữ rõ hơn
+        button_height = 60  # Chiều cao nút
+        button_spacing = 30  # Khoảng cách giữa các nút
+
+        draw_button("Play Now", WIDTH // 2 - button_width // 2, HEIGHT // 2 - button_height - button_spacing, button_width, button_height, RED, WHITE)
+        draw_button("Instruction", WIDTH // 2 - button_width // 2, HEIGHT // 2 + button_spacing, button_width, button_height, BLACK, WHITE)
+        
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = event.pos
+                # Kiểm tra vị trí chuột nhấn vào
+                if WIDTH // 2 - button_width // 2 < mouse_x < WIDTH // 2 + button_width // 2:
+                    if HEIGHT // 2 - button_height - button_spacing < mouse_y < HEIGHT // 2 - button_spacing:
+                        menu()
+                        play()
+                        result()
+                    elif HEIGHT // 2 + button_spacing < mouse_y < HEIGHT // 2 + button_spacing + button_height:
+                        instruction()  # Gọi màn hình hướng dẫn    
 
 game()
