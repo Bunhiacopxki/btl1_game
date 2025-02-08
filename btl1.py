@@ -575,6 +575,7 @@ def play():
                 
         # Nếu hết mạng thì thua
         if point.life <= 0:
+            point.life = 0
             running = False
 
 
