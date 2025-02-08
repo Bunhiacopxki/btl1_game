@@ -541,6 +541,7 @@ def play():
                     point.score -= 5
                     point.life -= 1
                     obj.draw_explosion(screen)
+                    pygame.display.flip()
                     objects_to_remove.append(obj)
                     hit_zombom.play()
 
@@ -573,7 +574,7 @@ def play():
                 objs.remove(obj)
                 
         # Nếu hết mạng thì thua
-        if point.life == 0:
+        if point.life <= 0:
             running = False
 
 
