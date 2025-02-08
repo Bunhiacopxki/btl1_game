@@ -1,6 +1,7 @@
 import pygame
 import sys
 import random
+import time
 
 # Khởi tạo Pygame
 pygame.init()
@@ -33,10 +34,24 @@ font = pygame.font.SysFont("comicsansms", 50)
 # Load hình ảnh
 grave_image = pygame.image.load('./img/grave/grave.webp').convert_alpha()
 hammer_image = pygame.image.load('./img/hammer/hammer.webp').convert_alpha()
+# zombie_images = [
+#     pygame.image.load(f'./img/zombie/zom{i}.jpg').convert_alpha() for i in range(1, 4)
+# ]
 zombie_images = [
-    pygame.image.load(f'./img/zombie/zom{i}.jpg').convert_alpha() for i in range(1, 4)
+    [pygame.image.load(f'./img/zombie/1_Walk{i}.png').convert_alpha() for i in range(1, 7)],
+    [pygame.image.load(f'./img/zombie/2_Walk{i}.png').convert_alpha() for i in range(1, 7)],
+    [pygame.image.load(f'./img/zombie/3_Walk{i}.png').convert_alpha() for i in range(1, 7)]
+]
+zombie_death_images = [
+    [pygame.image.load(f'./img/zombie_death/zombie1/Dead{i}.png').convert_alpha() for i in range(1, 9)],
+    [pygame.image.load(f'./img/zombie_death/zombie2/Dead{i}.png').convert_alpha() for i in range(1, 9)],
+    [pygame.image.load(f'./img/zombie_death/zombie3/Dead{i}.png').convert_alpha() for i in range(1, 9)]
 ]
 
+explosion = [
+    pygame.image.load('./img/explosion.png').convert_alpha(),
+    pygame.image.load('./img/explosion2.png').convert_alpha()
+]
 # font = pygame.font.Font("Chillerz.otf", 50)
 
 ##### Hình nền #####
@@ -44,19 +59,34 @@ zombie_images = [
 background_easy = pygame.image.load("./img/background_easy.jpg").convert()
 background_medium = pygame.image.load("./img/background_medium.jpg").convert()
 background_difficult = pygame.image.load("./img/background_difficult.jpg").convert()
-default_background = pygame.image.load("./img/default_background.jpg").convert()
+default_background = pygame.image.load("./img/background_intial.jpg").convert()
+background_intial = pygame.image.load("./img/background_intial.jpg").convert()
+background_ingame = pygame.image.load("./img/background_ingame.jpg").convert()
+
 
 # Resize background phù hợp kích thước màn hình
 background_easy = pygame.transform.scale(background_easy, (WIDTH, HEIGHT))
 background_medium = pygame.transform.scale(background_medium, (WIDTH, HEIGHT))
 background_difficult = pygame.transform.scale(background_difficult, (WIDTH, HEIGHT))
 default_background = pygame.transform.scale(default_background, (WIDTH, HEIGHT))
+background_intial = pygame.transform.scale(background_intial, (WIDTH, HEIGHT))
+background_ingame = pygame.transform.scale(background_ingame, (WIDTH, HEIGHT))
+
 
 ##### Nhạc nền #####
-# Nạp nhạc nền
-pygame.mixer.music.load('./sound/background_music.mp3')  # Đường dẫn tới nhạc nền
-pygame.mixer.music.set_volume(0.05)  # Nhạc nền ở mức 80%
-pygame.mixer.music.play(-1, 0.0)  # Phát nhạc nền, vòng lặp vô hạn
+MUSIC = {
+    'Easy': "./sound/easy_music.mp3",
+    'Medium': "./sound/medium_music.mp3",
+    'Difficult': "./sound/difficult_music.mp3"
+}
+menu_music = "./sound/menu_music.mp3"
+
+# Hàm phát nhạc nền
+def play_music(file_path):
+    pygame.mixer.music.stop()  # Dừng nhạc hiện tại
+    pygame.mixer.music.load(file_path)  # Tải nhạc mới
+    pygame.mixer.music.set_volume(0.1)
+    pygame.mixer.music.play(-1)  # Phát lặp vô hạn
 
 # Nạp âm thanh khi đập trúng zombie
 hit_zombie = pygame.mixer.Sound('./sound/hit_zombie.wav')  # Đường dẫn tới âm thanh khi đập trúng zombie
@@ -102,8 +132,6 @@ buttons = [
     Button(600, 500, 200, 50, "Difficult", BLACK, HOVER_COLOR),
 ]
 
-
-
 # Định nghĩa lớp Zombie với từng bộ phận riêng biệt
 class Zombie(pygame.sprite.Sprite):
     def __init__(self, x, y, delay):
@@ -115,28 +143,70 @@ class Zombie(pygame.sprite.Sprite):
         self.is_rising = False  # Trạng thái trồi lên
         self.dead = False
         self.grave_shown = False
-        self.image_path = ['zom1.jpg', 'zom2.jpg', 'zom3.jpg']
+        self.image_path = ['Zom1.png', 'Zom2.png', 'Zom3.png'] # chỉ dùng để tạo biết loại zombie
         self.zombie_type = random.randint(0, len(self.image_path) - 1)
+        self.sprites = zombie_images[self.zombie_type]
+        self.sprites_death = zombie_death_images[self.zombie_type]
+
+        self.frame_index = 0
+        self.frame_delay = 90  # Chuyển frame mỗi 150ms
+        self.last_update = pygame.time.get_ticks()
+        
+        self.playing_death_animation = False
+        self.frame_index_death = 0
+        self.last_update_death = pygame.time.get_ticks()
 
     def draw(self, screen):
-        # Tải ảnh bomb và lưu trữ trong thuộc tính image
-        self.image = zombie_images[self.zombie_type]
+        # Cập nhật frame dựa trên thời gian
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_update > self.frame_delay:
+            self.last_update = current_time
+            self.frame_index = (self.frame_index + 1) % len(self.sprites)  # Chuyển frame
+
+        # Lấy hình ảnh theo frame hiện tại
+        self.image = self.sprites[self.frame_index]
+        
         original_width, original_height = self.image.get_size()
-        # Chiều cao mới
+
+        # Thiết lập kích thước cho từng loại zombie
         if self.zombie_type == 2:
             self.height = 210
         elif self.zombie_type == 1:
             self.height = 175
         else:
             self.height = 161
-        # Tính toán chiều rộng mới dựa trên tỉ lệ ban đầu
+
         self.width = int((self.height / original_height) * original_width)
-        # Scale ảnh với chiều rộng và chiều cao mới
         self.image = pygame.transform.scale(self.image, (self.width, self.height))
-        # Lấy rect từ hình ảnh để định vị
-        self.rect = self.image.get_rect(topleft = (self.x, self.y))
-        # Vẽ hình ảnh lên màn hình
+
+        # Cập nhật vị trí và vẽ lên màn hình
+        self.rect = self.image.get_rect(topleft=(self.x, self.y))
         screen.blit(self.image, self.rect.topleft)
+
+    def draw_death(self, screen):
+        # Kiểm tra xem hoạt ảnh đã hoàn thành chưa
+        if self.frame_index_death >= len(self.sprites_death):
+            return True
+
+        # Vẽ frame hiện tại
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_update_death > 60:
+            self.last_update_death = current_time
+            self.frame_index_death += 1
+
+        # Chỉ vẽ nếu vẫn còn frame để hiển thị
+        if self.frame_index_death < len(self.sprites_death):
+            self.death_image = self.sprites_death[self.frame_index_death]
+            original_width, original_height = self.death_image.get_size()
+            
+            self.height = int((161/403)*original_height)
+            self.width = int((self.height / original_height) * original_width)
+            
+            self.death_image = pygame.transform.scale(self.death_image, (self.width, self.height))
+            
+            self.rect = self.death_image.get_rect(topleft=(self.x, self.y))
+            screen.blit(self.death_image, self.rect.topleft)
+        return False
 
     def update(self):
         global disappear_time
@@ -222,11 +292,12 @@ class Bomb(pygame.sprite.Sprite):
         self.is_rising = False  # Trạng thái trồi lên
         self.dead = False
         self.grave_shown = False
-        image_path = ['bomb.png', 'bomb2.png', 'zombom.jpg', 'zombom2.jpg']
-        img = random.randint(0, len(image_path) - 1)
+        self.image_path = ['bomb.png', 'bomb2.png', 'zombom.jpg', 'zombom2.jpg']
+        self.img = random.randint(0, len(self.image_path) - 1)
         # Tải ảnh bomb và lưu trữ trong thuộc tính image
-        self.image = pygame.image.load('./img/' + image_path[img]).convert_alpha()  # Hỗ trợ ảnh trong suốt
-
+        self.image = pygame.image.load('./img/' + self.image_path[self.img]).convert_alpha()  # Hỗ trợ ảnh trong suốt
+        if self.img < 2: self.image_explosion = explosion[0]
+        else: self.image_explosion = explosion[1]
         
         original_width, original_height = self.image.get_size()
         # Chiều cao mới
@@ -236,13 +307,18 @@ class Bomb(pygame.sprite.Sprite):
         # Scale ảnh với chiều rộng và chiều cao mới
         self.image = pygame.transform.scale(self.image, (new_width, new_height))
 
-        # Lấy rect từ hình ảnh để định vị
-        self.rect = self.image.get_rect(topleft=(self.x, self.y))
+        
 
     def draw(self, screen):
         # Vẽ hình ảnh lên màn hình
+        # Lấy rect từ hình ảnh để định vị
+        self.rect = self.image.get_rect(topleft=(self.x, self.y))
         screen.blit(self.image, self.rect.topleft)
 
+    def draw_explosion(self, screen):
+        self.rect = self.image_explosion.get_rect(topleft=(self.x, self.y))
+        screen.blit(self.image_explosion, self.rect.topleft)
+        
     def update(self):
         global disappear_time
         current_time = pygame.time.get_ticks()
@@ -321,13 +397,16 @@ def reset():
 
 ########################### Các thuộc tính của game ###########################
 selected_level = None
+selected_music = None
 disappear_time = 0
+current_music = None
 point = Point()
 
 ###################################### Màn hình ########################################
 # Xử lý sự kiện chọn level
 def menu():
     global selected_level
+    global selected_music
     global screen
     current_background = default_background  # Hình nền mặc định
     choosing_level = True
@@ -344,6 +423,7 @@ def menu():
                 for button in buttons:
                     if button.is_hovered:
                         selected_level = button.text
+                        selected_music = button.text
                         choosing_level = False
                         print(f"Chế độ chơi: {button.text}")
                         
@@ -379,6 +459,9 @@ def play():
     # Ẩn con trỏ chuột mặc định
     pygame.mouse.set_visible(False)
     disappear_time = LEVELS[selected_level]
+    current_music = MUSIC[selected_music]
+    print(current_music)
+    play_music(current_music)
 
     # Khởi tạo đối tượng búa
     hammer = Hammer()
@@ -393,8 +476,9 @@ def play():
     ########### Vòng lặp chính #############
     running = True
     while running:
-        screen.fill(WHITE)
-        
+        #screen.fill(WHITE)
+        screen.blit(background_ingame, (0,0))
+
         # HUD
         screen.blit(HUD, (0, 0))
 
@@ -412,8 +496,6 @@ def play():
             print("Game Over!")
             print(f"Your Score: {point.getPoint()}")
             print(f"Hit Rate: {point.getHitRate():.2%}")
-            
-
         spawn_interval = random.randint(500, 2000)
         
         if len(objs) < num_of_object and current_time - spawn_timer > spawn_interval:
@@ -428,6 +510,11 @@ def play():
             if obj.grave_shown:
                 grave = Grave(obj.x, obj.y)
                 grave.draw(screen)
+                
+            if isinstance(obj, Zombie) and obj.playing_death_animation:  # Nếu zombie đang trong hoạt ảnh chết
+                if obj.draw_death(screen):  # Trả về True nếu hoạt ảnh hoàn tất
+                    objects_to_remove.append(obj)
+                continue
             if obj.update():
                 objects_to_remove.append(obj)
                 if isinstance(obj, Zombie):     # Nếu không kịp đập zombie thường thì sẽ mất mạng + trừ điểm
@@ -442,7 +529,7 @@ def play():
                     hammer.mouse_pressed = False
                     obj.zombie_type -= 1
                     if obj.zombie_type == -1:
-                        objects_to_remove.append(obj)
+                        obj.playing_death_animation = True
                     else:
                         obj.draw(screen)
                     point.hit += 1
@@ -453,6 +540,7 @@ def play():
                     point.miss += 1
                     point.score -= 5
                     point.life -= 1
+                    obj.draw_explosion(screen)
                     objects_to_remove.append(obj)
                     hit_zombom.play()
 
@@ -478,8 +566,6 @@ def play():
         
         # Vẽ búa theo con trỏ chuột
         hammer.draw_cursor(screen, mouse_pos)
-                
-        
 
         # Xóa zombie
         for obj in objects_to_remove:
@@ -545,6 +631,7 @@ def result():
                 if replay_rect.rect.collidepoint(mouse_pos):
                     running = False
                     reset()
+                    pygame.mixer.music.stop()
                     game()
 
         pygame.display.flip()
@@ -588,6 +675,8 @@ def instruction():
 def game():
     while True:
         screen.fill(WHITE)
+        screen.blit(background_intial, (0, 0))  # Vẽ background
+
         # Hiển thị nút "Welcome to My Game"
         button_width = 600  # Chiều rộng nút lớn hơn vì đây là nút tiêu đề
         button_height = 80  # Chiều cao nút lớn hơn
@@ -613,6 +702,7 @@ def game():
                 # Kiểm tra vị trí chuột nhấn vào
                 if WIDTH // 2 - button_width // 2 < mouse_x < WIDTH // 2 + button_width // 2:
                     if HEIGHT // 2 - button_height - button_spacing < mouse_y < HEIGHT // 2 - button_spacing:
+                        play_music(menu_music)
                         menu()
                         play()
                         result()
