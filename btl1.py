@@ -61,7 +61,7 @@ background_medium = pygame.image.load("./img/background_medium.jpg").convert()
 background_difficult = pygame.image.load("./img/background_difficult.jpg").convert()
 default_background = pygame.image.load("./img/background_intial.jpg").convert()
 background_intial = pygame.image.load("./img/background_intial.jpg").convert()
-background_ingame = pygame.image.load("./img/background_ingame.jpg").convert()
+background_ingame = pygame.image.load("./img/Night.png").convert()
 
 
 # Resize background phù hợp kích thước màn hình
@@ -303,7 +303,7 @@ class Bomb(pygame.sprite.Sprite):
         
         original_width, original_height = self.image.get_size()
         # Chiều cao mới
-        new_height = 150
+        new_height = 161
         # Tính toán chiều rộng mới dựa trên tỉ lệ ban đầu
         new_width = int((new_height / original_height) * original_width)
         # Scale ảnh với chiều rộng và chiều cao mới
