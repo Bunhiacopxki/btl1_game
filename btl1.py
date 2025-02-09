@@ -294,6 +294,8 @@ class Bomb(pygame.sprite.Sprite):
         self.is_rising = False  # Trạng thái trồi lên
         self.dead = False
         self.grave_shown = False
+        self.exploding = False  # Kiểm soát trạng thái nổ
+        self.explosion_start_time = None  # Lưu thời gian bắt đầu nổ
         self.image_path = ['bomb.png', 'bomb2.png', 'zombom.jpg', 'zombom2.jpg']
         self.img = random.randint(0, len(self.image_path) - 1)
         # Tải ảnh bomb và lưu trữ trong thuộc tính image
@@ -318,8 +320,9 @@ class Bomb(pygame.sprite.Sprite):
         screen.blit(self.image, self.rect.topleft)
 
     def draw_explosion(self, screen):
-        self.rect = self.image_explosion.get_rect(topleft=(self.x, self.y))
-        screen.blit(self.image_explosion, self.rect.topleft)
+        self.image = self.image_explosion
+        self.rect = self.image.get_rect(topleft=(self.x, self.y))
+        screen.blit(self.image, self.rect.topleft)
         
     def update(self):
         global disappear_time
@@ -517,6 +520,15 @@ def play():
                 if obj.draw_death(screen):  # Trả về True nếu hoạt ảnh hoàn tất
                     objects_to_remove.append(obj)
                 continue
+            
+            if isinstance(obj, Bomb) and obj.exploding:
+                if pygame.time.get_ticks() - obj.explosion_start_time > 200:  # Sau 1 giây thì xóa
+                    point.miss += 1
+                    point.score -= 5
+                    point.life -= 1
+                    objects_to_remove.append(obj)
+                else:
+                    obj.draw_explosion(screen)  # Hiển thị hiệu ứng nổ
             if obj.update():
                 objects_to_remove.append(obj)
                 if isinstance(obj, Zombie):     # Nếu không kịp đập zombie thường thì sẽ mất mạng + trừ điểm
@@ -539,14 +551,10 @@ def play():
                     hit_zombie.play()  # Phát âm thanh khi trúng zombie
             else:
                 if hammer.check_collision(obj):
-                    point.miss += 1
-                    point.score -= 5
-                    point.life -= 1
-                    obj.draw_explosion(screen)
-                    pygame.display.flip()
-                    objects_to_remove.append(obj)
-                    hit_zombom.play()
-
+                    if not obj.exploding:  # Chỉ đặt thời gian nổ nếu chưa được thiết lập
+                        obj.explosion_start_time = pygame.time.get_ticks()
+                        obj.exploding = True
+                        hit_zombom.play()  # Phát âm thanh ngay khi va chạm
         # Xử lý sự kiện
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
