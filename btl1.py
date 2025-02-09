@@ -80,6 +80,8 @@ MUSIC = {
     'Difficult': "./sound/difficult_music.mp3"
 }
 menu_music = "./sound/menu_music.mp3"
+instruction_music = "./sound/ins_music.mp3"
+result_music = "./sound/res_music.mp3"
 
 # Hàm phát nhạc nền
 def play_music(file_path):
@@ -301,7 +303,7 @@ class Bomb(pygame.sprite.Sprite):
         
         original_width, original_height = self.image.get_size()
         # Chiều cao mới
-        new_height = 100
+        new_height = 150
         # Tính toán chiều rộng mới dựa trên tỉ lệ ban đầu
         new_width = int((new_height / original_height) * original_width)
         # Scale ảnh với chiều rộng và chiều cao mới
@@ -593,6 +595,8 @@ def play():
 
 ############# Màn hình kết thúc ###############
 def result():
+    # Nhạc nền
+    play_music(result_music)
     pygame.mouse.set_visible(True)
     bg = pygame.image.load("./img/result_bg.gif")
     bg = pygame.transform.scale(bg, (WIDTH, HEIGHT))
@@ -655,14 +659,19 @@ def draw_text(text, font, color, surface, x, y):
 # Màn hình hướng dẫn cách chơi
 def instruction():
     running = True
+    instruction_font = pygame.font.SysFont("comicsansms", 30)
+    ins_bg = pygame.image.load("./img/ins_bg2.jpg")
     while running:
-        screen.fill(WHITE)
-        draw_text("How to Play:", font, BLACK, screen, WIDTH // 2, HEIGHT // 5)
-        draw_text("1. Choose your level: Easy, Medium or Difficult", font, BLACK, screen, WIDTH // 2, HEIGHT // 2 - 1.5 * 80)
-        draw_text("Please remember the higher the level, the faster the speed.", font, BLACK, screen, WIDTH // 2, HEIGHT // 2 - 0.5 * 80)
-        draw_text("2. Click mouse on zombie's head to kill zombie.", font, BLACK, screen, WIDTH // 2, HEIGHT // 2 + 0.5 * 80)
-        draw_text("You have three lives, please be careful with bombs.", font, BLACK, screen, WIDTH // 2, HEIGHT // 2 + 1.5 * 80)
-        draw_text("Press ESC to go back.", font, RED, screen, WIDTH // 2, HEIGHT - 50)
+        screen.blit(ins_bg, (0, 0))  # Hiển thị hình nền
+        draw_text("How to Play:", font, BLACK, screen, WIDTH // 2, HEIGHT // 8)
+        draw_text("1. Choose your level: Easy, Medium or Difficult", instruction_font, BLACK, screen, WIDTH // 2, HEIGHT // 8 + 60)
+        draw_text("Please remember the higher the level, the faster the speed.", instruction_font, BLACK, screen, WIDTH // 2, HEIGHT // 8 + 2*60)
+        draw_text("2. Click mouse on zombie's head to kill zombie.", instruction_font, BLACK, screen, WIDTH // 2, HEIGHT // 8 + 3*60)
+        draw_text("There are some zombies that we need to knock multiple times in order to kill.", instruction_font, BLACK, screen, WIDTH // 2, HEIGHT // 8 + 4*60)
+        draw_text("If you don't kill a zombie before it disappear or you knock a bomb, you will lose a life.", instruction_font, BLACK, screen, WIDTH // 2, HEIGHT // 8 + 5*60)
+        draw_text("A knock on zombies will give you five points. In contrast, a knock on bomb will cost you five point.", instruction_font, BLACK, screen, WIDTH // 2, HEIGHT // 8 + 6*60)
+        draw_text("You have three lives. Good luck!", instruction_font, BLACK, screen, WIDTH // 2, HEIGHT // 8 + 7*60)
+        draw_text("Press ESC to go back.", font, RED, screen, WIDTH // 2, HEIGHT - 70)
 
         pygame.display.flip()
 
@@ -675,6 +684,8 @@ def instruction():
                     running = False
 
 def game():
+    # Nhạc nền
+    play_music(instruction_music)
     while True:
         screen.fill(WHITE)
         screen.blit(background_intial, (0, 0))  # Vẽ background
@@ -683,7 +694,7 @@ def game():
         button_width = 600  # Chiều rộng nút lớn hơn vì đây là nút tiêu đề
         button_height = 80  # Chiều cao nút lớn hơn
         title_y = HEIGHT // 2 - 250  # Căn nút tiêu đề phía trên hai nút còn lại
-        draw_button("Welcome to My Game", WIDTH // 2 - button_width // 2, title_y, button_width, button_height, GRAY, WHITE)
+        draw_button("Zomb or Bomb?", WIDTH // 2 - button_width // 2, title_y, button_width, button_height, GRAY, WHITE)
         
         # Hiển thị nút Play Now và Instruction
         button_width = 300  # Chiều rộng nút tăng để hiển thị chữ rõ hơn
